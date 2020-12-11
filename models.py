@@ -70,6 +70,12 @@ class RegressionModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.batch_size = 10
+        self.learn_rate = -0.05
+        self.w1 = nn.Parameter(1, 50)
+        self.b1 = nn.Parameter(1, 50)
+        self.w2 = nn.Parameter(50, 1)
+        self.b2 = nn.Parameter(1, 1)
 
     def run(self, x):
         """
@@ -81,6 +87,15 @@ class RegressionModel(object):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** YOUR CODE HERE ***"
+        # From building neural nets in the html description
+
+        """xw1 = nn.Linear(x, self.w0)
+        r1 = nn.ReLU(nn.AddBias(xw1, self.b0))
+        xw2 = nn.Linear(r1, self.w1)
+        return nn.AddBias(xw2, self.b1)"""
+        layer1 = nn.ReLU(nn.AddBias(nn.Linear(x, self.w1), self.b1))
+        out_layer = nn.AddBias(nn.Linear(layer1, self.w2), self.b2)
+        return out_layer
 
     def get_loss(self, x, y):
         """
@@ -93,12 +108,29 @@ class RegressionModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        y_star = self.run(x)
+        return nn.SquareLoss(y_star, y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        loss = float("inf")
+
+        # For some reason loss > .02 returns slightly more than .02
+        while loss > .01:
+
+            for x, y in dataset.iterate_once(self.batch_size):
+                lossObj = self.get_loss(x, y)
+                grad = nn.gradients(lossObj, [self.w1, self.w2, self.b1, self.b2])
+
+                self.w1.update(grad[0], self.learn_rate)
+                self.w2.update(grad[1], self.learn_rate)
+                self.b1.update(grad[2], self.learn_rate)
+                self.b2.update(grad[3], self.learn_rate)
+
+                loss = nn.as_scalar(lossObj)
 
 class DigitClassificationModel(object):
     """
