@@ -89,12 +89,9 @@ class RegressionModel(object):
         "*** YOUR CODE HERE ***"
         # From building neural nets in the html description
 
-        """xw1 = nn.Linear(x, self.w0)
-        r1 = nn.ReLU(nn.AddBias(xw1, self.b0))
-        xw2 = nn.Linear(r1, self.w1)
-        return nn.AddBias(xw2, self.b1)"""
         layer1 = nn.ReLU(nn.AddBias(nn.Linear(x, self.w1), self.b1))
         out_layer = nn.AddBias(nn.Linear(layer1, self.w2), self.b2)
+
         return out_layer
 
     def get_loss(self, x, y):
