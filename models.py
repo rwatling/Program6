@@ -70,8 +70,8 @@ class RegressionModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
-        self.batch_size = 10
-        self.learn_rate = -0.05
+        self.batch_size = 50
+        self.learn_rate = -0.01
         self.w1 = nn.Parameter(1, 50)
         self.b1 = nn.Parameter(1, 50)
         self.w2 = nn.Parameter(50, 1)
@@ -115,8 +115,7 @@ class RegressionModel(object):
         "*** YOUR CODE HERE ***"
         loss = float("inf")
 
-        # For some reason loss > .02 returns slightly more than .02
-        while loss > .01:
+        while True:
 
             for x, y in dataset.iterate_once(self.batch_size):
                 lossObj = self.get_loss(x, y)
@@ -127,7 +126,10 @@ class RegressionModel(object):
                 self.b1.update(grad[2], self.learn_rate)
                 self.b2.update(grad[3], self.learn_rate)
 
-                loss = nn.as_scalar(lossObj)
+                loss = nn.as_scalar(self.get_loss(nn.Constant(dataset.x), nn.Constant(dataset.y)))
+
+                if loss < .02:
+                    return
 
 class DigitClassificationModel(object):
     """
@@ -211,8 +213,14 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
-        self.W = nn.Parameter(50, 1)
-        self.W_hidden = nn.Parameter(50, 1)
+        self.hidden_d = 256
+        self.batch_size = 128
+        self.num_langs = 5
+        self.learn_rate = -0.01
+
+        self.W = nn.Parameter(self.num_chars, self.hidden_d)
+        self.W_hidden = nn.Parameter(self.hidden_d, self.hidden_d)
+        self.W_final = nn.Parameter(self.hidden_d, self.num_langs)
 
     def run(self, xs):
         """
@@ -248,12 +256,13 @@ class LanguageIDModel(object):
         i = 0
         h = 0
         z = 0
+
         for x in xs:
             if i == 0:
                 h = nn.ReLU(nn.Linear(x, self.W))
                 z = h
             else:
-                z = nn.Add(nn.Linear(x, self.W), nn.Linear(h, self.W_hidden))
+                z = nn.ReLU(nn.Add(nn.Linear(x, self.W), nn.Linear(h, self.W_hidden)))
                 h = z
             i += 1
 
@@ -277,9 +286,24 @@ class LanguageIDModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        y_star = self.run(xs)
+        return nn.SoftmaxLoss(y_star, y)
+
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        while True:
+
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                grad = nn.gradients(loss, [self.W, self.W_hidden, self.W_final])
+
+                self.W.update(grad[0], self.learn_rate)
+                self.W_hidden.update(grad[1], self.learn_rate)
+                self.W_final.update(grad[2], self.learn_rate)
+
+            if dataset.get_validation_accuracy() > 0.88:
+                return
