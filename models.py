@@ -250,14 +250,16 @@ class LanguageIDModel(object):
         z = 0
         for x in xs:
             if i == 0:
-                h = nn.ReLU(nn.Linear(x, self.W_hidden))
-                z = nn.Linear(x, self.W)
+                h = nn.ReLU(nn.Linear(x, self.W))
+                z = h
             else:
-                h = nn.ReLU(nn.Linear(x, self.W_hidden))
                 z = nn.Add(nn.Linear(x, self.W), nn.Linear(h, self.W_hidden))
+                h = z
             i += 1
 
-        return z
+        output = nn.Linear(z, self.W_final)
+
+        return output
 
 
     def get_loss(self, xs, y):
